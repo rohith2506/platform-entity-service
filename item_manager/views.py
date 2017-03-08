@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from mongo_helper import MongoHelper, get_mongo_conn
+from utils import get_pretty_data
 import json
 import pdb
 
@@ -13,10 +14,9 @@ def create_item(request):
 			item_id = request.POST.get('id')
 			item_type = request.POST.get('type')
 			item_blob = request.POST.get('blob')
-			rid, err = get_mongo_conn().insert_data(item_id, item_type, item_blob)
+			err = get_mongo_conn().insert_data(item_id, item_type, item_blob)
 			if not err:
 				response['status'] = True
-				response['id'] = str(rid)
 				response['error'] = None
 			else:
 				response['status'] = False
@@ -26,7 +26,6 @@ def create_item(request):
 		response['error'] = e
 	return HttpResponse(json.dumps(response), content_type="application/json")
 
-@csrf_protect
 def get_item(request):
 	response = {}
 	try:
@@ -36,7 +35,7 @@ def get_item(request):
 			item_data, err = get_mongo_conn().get_data(item_id, item_type)
 			if not err:
 				response['status'] = True
-				response['data'] = json.loads(item_data)
+				response['data'] = get_pretty_data(item_data)
 				response['error'] = None
 			else:
 				response['status'] = False
@@ -46,7 +45,7 @@ def get_item(request):
 		response['error'] = e
 	return HttpResponse(json.dumps(response), content_type="application/json")
 
-@csrf_protect
+@csrf_exempt
 def update_item(request):
 	response = {}
 	try:
@@ -67,7 +66,7 @@ def update_item(request):
 		response['error'] = e
 	return HttpResponse(json.dumps(response), content_type="application/json")
 
-@csrf_protect
+@csrf_exempt
 def delete_item(request):
 	response = {}
 	try:

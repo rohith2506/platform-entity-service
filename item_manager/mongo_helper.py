@@ -10,7 +10,7 @@ class MongoHelper:
 		self.mongo_collection = self.mongo_conn[db].collection
 
 	def insert_data(self, item_id, item_type, item_blob):
-		inserted_id, errors = None, []
+		errors = []
 		try:
 			if not item_id:
 				errors.append('no item_id to insert')
@@ -19,11 +19,14 @@ class MongoHelper:
 			elif not item_blob:
 				errors.append('no item_blob to insert')
 			else:
-				item_dict = {'id': item_id, 'type': item_type, 'blob': item_blob};
-				inserted_id = self.mongo_collection.insert_one(item_dict).inserted_id
+				item_data, err = self.get_data(item_id, item_type)
+				if not item_data:
+					self.mongo_collection.insert_one({'id': item_id, 'type': item_type, 'blob': item_blob})
+				else:
+					self.update_data(item_id, item_type, item_blob)
 		except Exception, e:
 			errors.append(e)
-		return inserted_id, errors
+		return errors
 
 	def get_data(self, item_id, item_type):
 		item_data, errors = [], []
