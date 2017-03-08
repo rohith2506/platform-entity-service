@@ -1,8 +1,11 @@
 from pymongo import MongoClient
 from platserv.settings import mongo_settings
+import pdb
 
 class MongoHelper:
 	def __init__(self, db, collection):
+		self.db = db
+		self.collection = collection
 		self.mongo_conn = MongoClient(mongo_settings['mongo_host'], mongo_settings['mongo_port'])
 		self.mongo_collection = self.mongo_conn[db].collection
 
@@ -29,7 +32,9 @@ class MongoHelper:
 				errors.append('no item_id to retrieve')
 			if not item_type:
 				errors.append('no item_type to retrieve')
-			item_data = self.mongo_collection.find_one({id: item_id})
+			data_cursor = self.mongo_collection.find({'id': item_id, 'type': item_type})
+			for data in data_cursor:
+				item_data.append(data)
 		except Exception, e:
 			errors.append(e)
 		return item_data, errors
@@ -44,7 +49,7 @@ class MongoHelper:
 			elif not item_blob:
 				errors.append('no item_blob to update')
 			else:
-				result = self.mongo_collection.update_one({'id': item_id}, {"$set": {blob: item_blob}})
+				result = self.mongo_collection.update_many({'id': item_id, 'type': item_type}, {"$set": {'blob': item_blob}})
 				modified_count = result.modified_count
 		except Exception, e:
 			errors.append(e)
@@ -57,14 +62,20 @@ class MongoHelper:
 				errors.append('no item_id to delete')
 			if not item_type:
 				errors.append('no item_type to delete')
-			result = self.mongo_collection.delete_one({'id': item_id})
+			result = self.mongo_collection.delete_many({'id': item_id, 'type': item_type})
 			deleted_count = result.deleted_count
 		except Exception, e:
 			errors.append(e)
 		return deleted_count, errors
 
+def get_mongo_conn():
+	mongo_helper = MongoHelper('item_manager', 'item_data')
+	return mongo_helper
+
 # helper Functions
-if __name__ == "__main__":
-	mongo_conn = Mongohelper('item_manager', 'item_data')
-	mongo_conn.insert_data(1, 'foo', 'fdkgfdgfgd')
-	
+def main():
+	mongo_conn = MongoHelper('item_manager', 'item_data')
+	mongo_conn.insert_data(1, 'foo', 'Hello World')
+	mongo_conn.get_data(1, 'foo')
+	mongo_conn.update_data(1, 'foo', 'Hello People')
+	mongo_conn.delete_data(1, 'foo')
